@@ -1,0 +1,2213 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>JJK: Cursed Clash</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Noto+Serif+JP:wght@300;400;700&display=swap");
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            :root {
+                --p1: #00c8ff;
+                --p2: #ff3a3a;
+                --gold: #f5c518;
+                --dark: #030306;
+                --panel: rgba(3, 3, 10, 0.88);
+                --glow-p1: 0 0 20px rgba(0, 200, 255, 0.6);
+                --glow-p2: 0 0 20px rgba(255, 58, 58, 0.6);
+            }
+            body {
+                background: var(--dark);
+                overflow: hidden;
+                font-family: "Noto Serif JP", serif;
+                color: #fff;
+                height: 100vh;
+                width: 100vw;
+                user-select: none;
+            }
+
+            /* ── THREE canvas ── */
+            #three-canvas {
+                position: fixed;
+                inset: 0;
+                z-index: 0;
+            }
+            #grain {
+                position: fixed;
+                inset: 0;
+                pointer-events: none;
+                z-index: 1;
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+            }
+
+            /* ── LOBBY ── */
+            #lobby {
+                position: fixed;
+                inset: 0;
+                z-index: 100;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: radial-gradient(
+                    ellipse at center,
+                    #0a0014 0%,
+                    #030306 70%
+                );
+            }
+            #lobby-inner {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 28px;
+                max-width: 480px;
+                width: 90%;
+            }
+            .jjk-title {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(1.6rem, 5vw, 3rem);
+                font-weight: 900;
+                background: linear-gradient(
+                    135deg,
+                    #fff 0%,
+                    var(--gold) 50%,
+                    #fff 100%
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: none;
+                letter-spacing: 6px;
+                text-align: center;
+            }
+            .jjk-subtitle {
+                font-size: 0.85rem;
+                letter-spacing: 8px;
+                color: rgba(255, 255, 255, 0.4);
+                text-align: center;
+                text-transform: uppercase;
+            }
+            .lobby-card {
+                width: 100%;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                padding: 28px 32px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                backdrop-filter: blur(10px);
+            }
+            .lobby-card h3 {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.9rem;
+                letter-spacing: 4px;
+                color: rgba(255, 255, 255, 0.5);
+                text-align: center;
+            }
+            .input-row {
+                display: flex;
+                gap: 10px;
+            }
+            .lobby-input {
+                flex: 1;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 10px;
+                padding: 12px 16px;
+                color: #fff;
+                font-family: inherit;
+                font-size: 1rem;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            .lobby-input:focus {
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+            .lobby-input::placeholder {
+                color: rgba(255, 255, 255, 0.25);
+            }
+            .btn {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 10px;
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.85rem;
+                letter-spacing: 2px;
+                cursor: pointer;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+            .btn-create {
+                background: linear-gradient(135deg, #1a0a3a, #3d1a8a);
+                color: #c8a0ff;
+                border: 1px solid rgba(180, 100, 255, 0.3);
+            }
+            .btn-create:hover {
+                background: linear-gradient(135deg, #2a1050, #5a28cc);
+                box-shadow: 0 0 20px rgba(150, 80, 255, 0.4);
+            }
+            .btn-join {
+                background: linear-gradient(135deg, #0a1a3a, #1a408a);
+                color: #80c8ff;
+                border: 1px solid rgba(80, 150, 255, 0.3);
+            }
+            .btn-join:hover {
+                background: linear-gradient(135deg, #102050, #2860cc);
+                box-shadow: 0 0 20px rgba(60, 120, 255, 0.4);
+            }
+            .btn-wide {
+                width: 100%;
+                justify-content: center;
+            }
+            .lobby-divider {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: rgba(255, 255, 255, 0.2);
+                font-size: 0.75rem;
+                letter-spacing: 4px;
+            }
+            .lobby-divider::before,
+            .lobby-divider::after {
+                content: "";
+                flex: 1;
+                height: 1px;
+                background: rgba(255, 255, 255, 0.1);
+            }
+            #lobby-status {
+                font-size: 0.8rem;
+                color: rgba(255, 255, 255, 0.4);
+                text-align: center;
+                min-height: 20px;
+                letter-spacing: 2px;
+            }
+            #lobby-status.error {
+                color: #ff6060;
+            }
+            #lobby-status.success {
+                color: #60ff99;
+            }
+
+            /* ── WAITING SCREEN ── */
+            #waiting {
+                position: fixed;
+                inset: 0;
+                z-index: 99;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(3, 3, 6, 0.97);
+            }
+            .room-code-display {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(2.5rem, 8vw, 5rem);
+                color: var(--gold);
+                letter-spacing: 12px;
+                text-shadow: 0 0 40px rgba(245, 197, 24, 0.4);
+            }
+            .waiting-label {
+                font-size: 0.8rem;
+                letter-spacing: 6px;
+                color: rgba(255, 255, 255, 0.3);
+                margin-top: 10px;
+                text-transform: uppercase;
+            }
+            .pulse-ring {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                border: 2px solid rgba(245, 197, 24, 0.3);
+                animation: pulseRing 2s ease-out infinite;
+                margin-top: 32px;
+            }
+            @keyframes pulseRing {
+                0% {
+                    transform: scale(0.8);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(2);
+                    opacity: 0;
+                }
+            }
+
+            /* ── GAME HUD ── */
+            #hud {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 20;
+                pointer-events: none;
+                padding: 16px 24px;
+            }
+            .hud-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .hp-block {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .hp-block.p2 {
+                align-items: flex-end;
+            }
+            .player-label {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.7rem;
+                letter-spacing: 3px;
+                opacity: 0.7;
+            }
+            .p1 .player-label {
+                color: var(--p1);
+            }
+            .p2 .player-label {
+                color: var(--p2);
+            }
+            .hp-bar-wrap {
+                width: 100%;
+                height: 10px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 5px;
+                overflow: hidden;
+            }
+            .p2 .hp-bar-wrap {
+                direction: rtl;
+            }
+            .hp-bar {
+                height: 100%;
+                border-radius: 5px;
+                transition: width 0.4s ease;
+                width: 100%;
+            }
+            .p1 .hp-bar {
+                background: linear-gradient(90deg, #0088bb, var(--p1));
+                box-shadow: var(--glow-p1);
+            }
+            .p2 .hp-bar {
+                background: linear-gradient(90deg, #bb0000, var(--p2));
+                box-shadow: var(--glow-p2);
+            }
+            .hp-num {
+                font-size: 0.75rem;
+                opacity: 0.6;
+            }
+            .vs-badge {
+                flex-shrink: 0;
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.6rem;
+                letter-spacing: 1px;
+                color: rgba(255, 255, 255, 0.4);
+                margin-top: 8px;
+            }
+
+            /* ── STATUS BAR ── */
+            #status-bar {
+                position: fixed;
+                top: 90px;
+                left: 0;
+                right: 0;
+                z-index: 20;
+                pointer-events: none;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+            }
+            #technique-name {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(0.8rem, 2.5vw, 1.2rem);
+                letter-spacing: 4px;
+                color: #00ffff;
+                text-transform: uppercase;
+                text-shadow: 0 0 15px currentColor;
+                transition: all 0.3s;
+                text-align: center;
+                padding: 0 20px;
+            }
+            #event-msg {
+                font-size: 0.85rem;
+                letter-spacing: 3px;
+                color: rgba(255, 255, 255, 0.6);
+                text-align: center;
+                min-height: 22px;
+                transition: all 0.3s;
+            }
+
+            /* ── CAST CHARGE BAR ── */
+            #charge-wrap {
+                position: fixed;
+                bottom: 240px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 20;
+                width: 260px;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                pointer-events: none;
+            }
+            #charge-label {
+                font-size: 0.7rem;
+                letter-spacing: 4px;
+                color: rgba(255, 255, 255, 0.5);
+                text-transform: uppercase;
+            }
+            #charge-bar-outer {
+                width: 100%;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            #charge-bar-inner {
+                height: 100%;
+                width: 0%;
+                border-radius: 3px;
+                transition: width 0.05s linear;
+                background: linear-gradient(90deg, #8800ff, #ff00cc);
+            }
+
+            /* ── CLASH UI ── */
+            #clash-ui {
+                position: fixed;
+                inset: 0;
+                z-index: 50;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(4px);
+            }
+            #clash-title {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(1.4rem, 4vw, 2.5rem);
+                color: var(--gold);
+                letter-spacing: 6px;
+                text-shadow: 0 0 30px rgba(245, 197, 24, 0.6);
+                animation: flashGold 0.4s ease infinite alternate;
+            }
+            @keyframes flashGold {
+                from {
+                    opacity: 0.7;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            #clash-sequence {
+                display: flex;
+                gap: 16px;
+                margin-top: 28px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .clash-sign {
+                width: 72px;
+                height: 72px;
+                border-radius: 14px;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                font-size: 1.6rem;
+                background: rgba(255, 255, 255, 0.04);
+                transition: all 0.2s;
+                position: relative;
+            }
+            .clash-sign.done {
+                border-color: var(--gold);
+                background: rgba(245, 197, 24, 0.15);
+                box-shadow: 0 0 20px rgba(245, 197, 24, 0.4);
+            }
+            .clash-sign.active {
+                border-color: #fff;
+                background: rgba(255, 255, 255, 0.1);
+                animation: pulseBorder 0.5s ease infinite alternate;
+            }
+            @keyframes pulseBorder {
+                from {
+                    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+                }
+                to {
+                    box-shadow: 0 0 25px rgba(255, 255, 255, 0.7);
+                }
+            }
+            .clash-sign-label {
+                font-size: 0.55rem;
+                letter-spacing: 1px;
+                color: rgba(255, 255, 255, 0.5);
+                text-transform: uppercase;
+            }
+            #clash-progress {
+                display: flex;
+                gap: 32px;
+                margin-top: 24px;
+            }
+            .clash-prog-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            .clash-prog-label {
+                font-size: 0.7rem;
+                letter-spacing: 3px;
+                opacity: 0.5;
+                text-transform: uppercase;
+            }
+            .clash-prog-bar {
+                width: 140px;
+                height: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .clash-prog-fill {
+                height: 100%;
+                width: 0%;
+                border-radius: 4px;
+                transition: width 0.15s ease;
+            }
+            .clash-prog-fill.p1 {
+                background: linear-gradient(90deg, #0088bb, var(--p1));
+                box-shadow: var(--glow-p1);
+            }
+            .clash-prog-fill.p2 {
+                background: linear-gradient(90deg, #bb0000, var(--p2));
+                box-shadow: var(--glow-p2);
+            }
+            #clash-timer {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 2rem;
+                color: rgba(255, 255, 255, 0.3);
+                margin-top: 16px;
+            }
+
+            /* ── GESTURE GUIDE (toggle) ── */
+            #gesture-guide {
+                position: fixed;
+                bottom: 16px;
+                right: 16px;
+                z-index: 20;
+                width: 260px;
+                background: rgba(3, 3, 10, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 14px;
+                padding: 16px 18px;
+                backdrop-filter: blur(10px);
+                transition: all 0.3s;
+                transform: translateX(290px);
+            }
+            #gesture-guide.open {
+                transform: translateX(0);
+            }
+            #guide-toggle {
+                position: fixed;
+                bottom: 24px;
+                right: 16px;
+                z-index: 21;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 10px;
+                padding: 8px 14px;
+                cursor: pointer;
+                font-size: 0.75rem;
+                letter-spacing: 2px;
+                color: rgba(255, 255, 255, 0.6);
+                pointer-events: all;
+                display: none;
+            }
+            #gesture-guide h4 {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.7rem;
+                letter-spacing: 3px;
+                color: rgba(255, 255, 255, 0.4);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding-bottom: 10px;
+                margin-bottom: 12px;
+            }
+            .g-item {
+                margin-bottom: 10px;
+                font-size: 0.75rem;
+            }
+            .g-item .g-name {
+                font-weight: 700;
+                margin-bottom: 2px;
+            }
+            .g-item .g-seq {
+                color: rgba(255, 255, 255, 0.4);
+                font-size: 0.68rem;
+            }
+            .c-blue {
+                color: #00c8ff;
+            }
+            .c-red {
+                color: #ff5555;
+            }
+            .c-dis {
+                color: #ff9900;
+            }
+            .c-purp {
+                color: #cc44ff;
+            }
+            .c-void {
+                color: #44ffee;
+            }
+            .c-shrine {
+                color: #ff2222;
+            }
+            .c-shadow {
+                color: #44ff88;
+            }
+            .c-iron {
+                color: #ff6600;
+            }
+
+            /* ── VIDEO ── */
+            #video-container {
+                position: fixed;
+                bottom: 16px;
+                left: 50%;
+                transform: translateX(-50%) scaleX(-1);
+                width: min(360px, 80vw);
+                height: min(220px, 30vh);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 18px;
+                overflow: hidden;
+                z-index: 20;
+                background: #000;
+                box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+            }
+            video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                opacity: 0.85;
+            }
+            #output_canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            /* ── GAME OVER ── */
+            #gameover {
+                position: fixed;
+                inset: 0;
+                z-index: 200;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(8px);
+            }
+            #gameover-title {
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(2rem, 7vw, 5rem);
+                color: var(--gold);
+                letter-spacing: 8px;
+                text-shadow: 0 0 50px rgba(245, 197, 24, 0.5);
+                animation: victoryPulse 1.5s ease infinite;
+            }
+            @keyframes victoryPulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.04);
+                }
+            }
+            #gameover-sub {
+                font-size: 0.9rem;
+                letter-spacing: 5px;
+                color: rgba(255, 255, 255, 0.5);
+                margin-top: 16px;
+            }
+            #gameover-btn {
+                margin-top: 40px;
+                padding: 14px 40px;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 12px;
+                color: #fff;
+                font-family: "Cinzel Decorative", cursive;
+                font-size: 0.85rem;
+                letter-spacing: 3px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            #gameover-btn:hover {
+                background: rgba(255, 255, 255, 0.15);
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            }
+
+            /* ── DAMAGE FLASH ── */
+            .damage-flash {
+                animation: flashDmg 0.5s ease forwards;
+            }
+            @keyframes flashDmg {
+                0% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.3;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+
+            /* ── HIT NOTIFICATION ── */
+            #hit-notif {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                z-index: 60;
+                font-family: "Cinzel Decorative", cursive;
+                font-size: clamp(2rem, 6vw, 4rem);
+                pointer-events: none;
+                transition: all 0.1s;
+                text-align: center;
+                white-space: nowrap;
+            }
+            #hit-notif.show {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        </style>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                }
+            }
+        </script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    </head>
+    <body>
+        <div id="grain"></div>
+
+        <!-- LOBBY -->
+        <div id="lobby">
+            <div id="lobby-inner">
+                <div>
+                    <div class="jjk-title">呪術廻戦</div>
+                    <div class="jjk-subtitle" style="margin-top: 8px">
+                        CURSED CLASH
+                    </div>
+                </div>
+                <div class="lobby-card">
+                    <h3>CREATE ROOM</h3>
+                    <div class="input-row">
+                        <input
+                            class="lobby-input"
+                            id="create-code"
+                            placeholder="Enter room code..."
+                            maxlength="8"
+                        />
+                        <button class="btn btn-create" id="btn-create">
+                            CREATE
+                        </button>
+                    </div>
+                </div>
+                <div class="lobby-divider">OR</div>
+                <div class="lobby-card">
+                    <h3>JOIN ROOM</h3>
+                    <div class="input-row">
+                        <input
+                            class="lobby-input"
+                            id="join-code"
+                            placeholder="Enter room code..."
+                            maxlength="8"
+                        />
+                        <button class="btn btn-join">JOIN</button>
+                    </div>
+                </div>
+                <div id="lobby-status"></div>
+                <div
+                    style="
+                        font-size: 0.65rem;
+                        color: rgba(255, 255, 255, 0.2);
+                        letter-spacing: 2px;
+                        text-align: center;
+                        line-height: 1.8;
+                    "
+                >
+                    Share the room code with your opponent.<br />Both players
+                    need a webcam.
+                </div>
+            </div>
+        </div>
+
+        <!-- WAITING -->
+        <div id="waiting">
+            <div
+                style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                "
+            >
+                <div class="waiting-label">ROOM CODE</div>
+                <div class="room-code-display" id="waiting-code">——</div>
+                <div class="waiting-label" style="margin-top: 16px">
+                    WAITING FOR OPPONENT
+                </div>
+                <div class="pulse-ring"></div>
+                <div
+                    style="
+                        margin-top: 32px;
+                        font-size: 0.7rem;
+                        letter-spacing: 3px;
+                        color: rgba(255, 255, 255, 0.2);
+                    "
+                >
+                    Share this code with your opponent to begin
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME HUD -->
+        <div id="hud" style="display: none">
+            <div class="hud-row">
+                <div class="hp-block p1">
+                    <div class="player-label">PLAYER 1</div>
+                    <div class="hp-bar-wrap">
+                        <div class="hp-bar" id="p1-bar"></div>
+                    </div>
+                    <div class="hp-num" id="p1-hp">200</div>
+                </div>
+                <div class="vs-badge">VS</div>
+                <div class="hp-block p2">
+                    <div class="player-label">PLAYER 2</div>
+                    <div class="hp-bar-wrap">
+                        <div class="hp-bar" id="p2-bar"></div>
+                    </div>
+                    <div class="hp-num" id="p2-hp">200</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATUS -->
+        <div id="status-bar" style="display: none">
+            <div id="technique-name">CURSED ENERGY</div>
+            <div id="event-msg"></div>
+        </div>
+
+        <!-- CHARGE BAR -->
+        <div id="charge-wrap">
+            <div id="charge-label">CHARGING</div>
+            <div id="charge-bar-outer"><div id="charge-bar-inner"></div></div>
+        </div>
+
+        <!-- CLASH UI -->
+        <div id="clash-ui">
+            <div id="clash-title">⚔ CURSED CLASH ⚔</div>
+            <div id="clash-sequence"></div>
+            <div id="clash-progress">
+                <div class="clash-prog-item">
+                    <div class="clash-prog-label" id="clash-p1-label">P1</div>
+                    <div class="clash-prog-bar">
+                        <div
+                            class="clash-prog-fill p1"
+                            id="clash-p1-fill"
+                        ></div>
+                    </div>
+                </div>
+                <div class="clash-prog-item">
+                    <div class="clash-prog-label" id="clash-p2-label">P2</div>
+                    <div class="clash-prog-bar">
+                        <div
+                            class="clash-prog-fill p2"
+                            id="clash-p2-fill"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+            <div id="clash-timer">8</div>
+        </div>
+
+        <!-- GESTURE GUIDE -->
+        <button id="guide-toggle">☰ GUIDE</button>
+        <div id="gesture-guide">
+            <h4>TECHNIQUE GUIDE</h4>
+            <div class="g-item">
+                <div class="g-name c-blue">Blue</div>
+                <div class="g-seq">☝️ Index up (1s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-red">Red</div>
+                <div class="g-seq">☝️→✊ Index→Fist (1s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-dis">Dismantle</div>
+                <div class="g-seq">🤌→🖐️ Pinch→Flat (1s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-purp">Hollow Purple</div>
+                <div class="g-seq">🤌→🤘→🤌 (1s)</div>
+            </div>
+            <div
+                class="g-item"
+                style="
+                    border-top: 1px solid rgba(255, 255, 255, 0.08);
+                    padding-top: 8px;
+                    margin-top: 4px;
+                "
+            >
+                <div class="g-name c-void">Infinite Void</div>
+                <div class="g-seq">☝️→✌️ Index→Peace (2s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-shrine">Malevolent Shrine</div>
+                <div class="g-seq">✊→🖐️ Fist→Flat (2s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-shadow">Chimera Shadow Garden</div>
+                <div class="g-seq">🤘→✌️ Horns→Peace (2s)</div>
+            </div>
+            <div class="g-item">
+                <div class="g-name c-iron">Coffin: Iron Mountain</div>
+                <div class="g-seq">✊→🤘→✊ (2s)</div>
+            </div>
+            <div
+                class="g-item"
+                style="
+                    border-top: 1px solid rgba(255, 255, 255, 0.08);
+                    padding-top: 8px;
+                    margin-top: 4px;
+                "
+            >
+                <div class="g-name" style="color: #aaa">Block</div>
+                <div class="g-seq">🖐️🖐️ Both hands flat (hold)</div>
+            </div>
+            <div
+                style="
+                    font-size: 0.6rem;
+                    color: rgba(255, 255, 255, 0.2);
+                    margin-top: 10px;
+                    letter-spacing: 1px;
+                    line-height: 1.7;
+                "
+            >
+                Blue &gt; Red &gt; Dismantle &gt; Blue<br />
+                Domains beat all techniques<br />
+                Block fails vs Domains
+            </div>
+        </div>
+
+        <!-- VIDEO -->
+        <div id="video-container" style="display: none">
+            <video class="input_video"></video>
+            <canvas id="output_canvas"></canvas>
+        </div>
+
+        <!-- HIT NOTIF -->
+        <div id="hit-notif"></div>
+
+        <!-- GAME OVER -->
+        <div id="gameover">
+            <div id="gameover-title">VICTORY</div>
+            <div id="gameover-sub">THE CURSED ENERGY DISSIPATES</div>
+            <button id="gameover-btn">RETURN TO LOBBY</button>
+        </div>
+
+        <script type="module">
+            import * as THREE from "three";
+            import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+            import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+            import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+            // ═══════════════════════════════════════════════════════
+            // THREE.JS SETUP
+            // ═══════════════════════════════════════════════════════
+            const scene = new THREE.Scene();
+            const cam3d = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000,
+            );
+            cam3d.position.z = 55;
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.domElement.id = "three-canvas";
+            document.body.prepend(renderer.domElement);
+
+            const composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, cam3d));
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                1.2,
+                0.4,
+                0.85,
+            );
+            composer.addPass(bloomPass);
+
+            const COUNT = 18000;
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(COUNT * 3);
+            const col = new Float32Array(COUNT * 3);
+            const siz = new Float32Array(COUNT);
+            const tPos = new Float32Array(COUNT * 3);
+            const tCol = new Float32Array(COUNT * 3);
+            const tSiz = new Float32Array(COUNT);
+            geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+            geo.setAttribute("size", new THREE.BufferAttribute(siz, 1));
+            const particles = new THREE.Points(
+                geo,
+                new THREE.PointsMaterial({
+                    size: 0.3,
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending,
+                    transparent: true,
+                    depthWrite: false,
+                }),
+            );
+            scene.add(particles);
+
+            // Particle presets
+            const PRESETS = {
+                neutral: (i) => {
+                    if (i < COUNT * 0.04) {
+                        const r = 15 + Math.random() * 20,
+                            t = Math.random() * 6.28,
+                            ph = Math.random() * 3.14;
+                        return {
+                            x: r * Math.sin(ph) * Math.cos(t),
+                            y: r * Math.sin(ph) * Math.sin(t),
+                            z: r * Math.cos(ph),
+                            r: 0.05,
+                            g: 0.05,
+                            b: 0.15,
+                            s: 0.4,
+                        };
+                    }
+                    return { x: 0, y: 0, z: 0, r: 0, g: 0, b: 0, s: 0 };
+                },
+                blue: (i) => {
+                    if (i < COUNT * 0.15) {
+                        const angle = Math.random() * Math.PI * 2,
+                            rad = 8 + Math.random() * 4;
+                        return {
+                            x: rad * Math.cos(angle),
+                            y: rad * Math.sin(angle),
+                            z: (Math.random() - 0.5) * 3,
+                            r: 0,
+                            g: 0.6,
+                            b: 1,
+                            s: 2.5,
+                        };
+                    }
+                    const r = 15 + Math.random() * 30,
+                        t = Math.random() * 6.28,
+                        ph = Math.acos(2 * Math.random() - 1);
+                    return {
+                        x: r * Math.sin(ph) * Math.cos(t),
+                        y: r * Math.sin(ph) * Math.sin(t),
+                        z: r * Math.cos(ph),
+                        r: 0,
+                        g: 0.3,
+                        b: 0.8,
+                        s: 0.8,
+                    };
+                },
+                red: (i) => {
+                    if (i < COUNT * 0.1) {
+                        const r = Math.random() * 9,
+                            t = Math.random() * 6.28,
+                            ph = Math.acos(2 * Math.random() - 1);
+                        return {
+                            x: r * Math.sin(ph) * Math.cos(t),
+                            y: r * Math.sin(ph) * Math.sin(t),
+                            z: r * Math.cos(ph),
+                            r: 3,
+                            g: 0.1,
+                            b: 0.1,
+                            s: 2.5,
+                        };
+                    }
+                    const arm = 3,
+                        ang =
+                            (i / COUNT) * 15 +
+                            (i % arm) * ((Math.PI * 2) / arm),
+                        rad = 2 + (i / COUNT) * 40;
+                    return {
+                        x: rad * Math.cos(ang),
+                        y: rad * Math.sin(ang),
+                        z: (Math.random() - 0.5) * (10 * (i / COUNT)),
+                        r: 0.8,
+                        g: 0,
+                        b: 0,
+                        s: 1,
+                    };
+                },
+                dismantle: (i) => {
+                    const t = i / COUNT,
+                        blade = Math.floor(t * 5);
+                    const bAngle = (blade / 5) * Math.PI * 2,
+                        len = Math.random() * 30;
+                    return {
+                        x: len * Math.cos(bAngle) + (Math.random() - 0.5) * 3,
+                        y: len * Math.sin(bAngle) + (Math.random() - 0.5) * 3,
+                        z: (Math.random() - 0.5) * 5,
+                        r: 0.9,
+                        g: 0.55,
+                        b: 0.1,
+                        s: 1.5,
+                    };
+                },
+                purple: (i) => {
+                    if (Math.random() > 0.8)
+                        return {
+                            x: (Math.random() - 0.5) * 100,
+                            y: (Math.random() - 0.5) * 100,
+                            z: (Math.random() - 0.5) * 100,
+                            r: 0.5,
+                            g: 0.5,
+                            b: 0.7,
+                            s: 0.8,
+                        };
+                    const r = 20,
+                        t = Math.random() * Math.PI * 2,
+                        ph = Math.acos(2 * Math.random() - 1);
+                    return {
+                        x: r * Math.sin(ph) * Math.cos(t),
+                        y: r * Math.sin(ph) * Math.sin(t),
+                        z: r * Math.cos(ph),
+                        r: 0.6,
+                        g: 0.5,
+                        b: 1,
+                        s: 2.5,
+                    };
+                },
+                void: (i) => {
+                    if (i < COUNT * 0.15) {
+                        const angle = Math.random() * Math.PI * 2;
+                        return {
+                            x: 26 * Math.cos(angle),
+                            y: 26 * Math.sin(angle),
+                            z: Math.random() - 0.5,
+                            r: 1,
+                            g: 1,
+                            b: 1,
+                            s: 2.5,
+                        };
+                    }
+                    const rad = 30 + Math.random() * 90,
+                        t = Math.random() * Math.PI * 2,
+                        ph = Math.acos(2 * Math.random() - 1);
+                    return {
+                        x: rad * Math.sin(ph) * Math.cos(t),
+                        y: rad * Math.sin(ph) * Math.sin(t),
+                        z: rad * Math.cos(ph),
+                        r: 0.1,
+                        g: 0.6,
+                        b: 1,
+                        s: 0.7,
+                    };
+                },
+                shrine: (i) => {
+                    const tot = COUNT;
+                    if (i < tot * 0.3)
+                        return {
+                            x: (Math.random() - 0.5) * 80,
+                            y: -15,
+                            z: (Math.random() - 0.5) * 80,
+                            r: 0.4,
+                            g: 0,
+                            b: 0,
+                            s: 0.8,
+                        };
+                    if (i < tot * 0.4) {
+                        const px = (i % 4 < 2 ? 1 : -1) * 12,
+                            pz = ((i % 4) % 2 == 0 ? 1 : -1) * 8;
+                        return {
+                            x: px + (Math.random() - 0.5) * 2,
+                            y: -15 + Math.random() * 30,
+                            z: pz + (Math.random() - 0.5) * 2,
+                            r: 0.2,
+                            g: 0.2,
+                            b: 0.2,
+                            s: 0.6,
+                        };
+                    }
+                    const t2 = Math.random() * Math.PI * 2,
+                        rad = Math.random() * 30,
+                        curve = Math.pow(rad / 30, 2) * 10;
+                    return {
+                        x: rad * Math.cos(t2),
+                        y: 15 - curve + Math.random() * 2,
+                        z: rad * Math.sin(t2) * 0.6,
+                        r: 0.6,
+                        g: 0,
+                        b: 0,
+                        s: 0.6,
+                    };
+                },
+                shadow: (i) => {
+                    if (i < COUNT * 0.15) {
+                        const isRim = Math.random() > 0.2,
+                            cy = 25,
+                            cz = -10,
+                            R = 18;
+                        if (isRim) {
+                            const t = Math.random() * Math.PI * 2,
+                                rw = (Math.random() - 0.5) * 4;
+                            return {
+                                x: (R + rw) * Math.cos(t),
+                                y: cy + (R + rw) * Math.sin(t),
+                                z: cz + (Math.random() - 0.5) * 3,
+                                r: 1,
+                                g: 0.85,
+                                b: 0.2,
+                                s: 2.5,
+                            };
+                        }
+                        const sp = Math.floor(Math.random() * 8),
+                            ang = sp * (Math.PI / 4),
+                            rd = Math.random() * R,
+                            sp2 = (Math.random() - 0.5) * 1.5;
+                        return {
+                            x: rd * Math.cos(ang) + sp2,
+                            y: cy + rd * Math.sin(ang) + sp2,
+                            z: cz + (Math.random() - 0.5) * 2,
+                            r: 1,
+                            g: 0.85,
+                            b: 0.2,
+                            s: 2.5,
+                        };
+                    }
+                    const rad = 10 + Math.random() * 70,
+                        ang = Math.random() * Math.PI * 2,
+                        isSpike = Math.random() > 0.92;
+                    let x = rad * Math.cos(ang),
+                        z = rad * Math.sin(ang) + (Math.random() - 0.5) * 20,
+                        y = -22 + Math.random() * 6;
+                    let gc = 0.15,
+                        bc = 0.1,
+                        s = 3.5;
+                    if (isSpike) {
+                        y += Math.random() * 40;
+                        gc = 0.6;
+                        bc = 0.4;
+                        s = 1.2;
+                    }
+                    return { x, y, z, r: 0, g: gc, b: bc, s };
+                },
+                iron: (i) => {
+                    if (i < COUNT * 0.5) {
+                        const t = Math.random(),
+                            y = -25 + t * 40,
+                            br = 45,
+                            tr = 10,
+                            r =
+                                tr +
+                                (1 - t) * (br - tr) +
+                                (Math.random() - 0.5) * 4,
+                            ang = Math.random() * Math.PI * 2;
+                        const isHot = t > 0.7 && Math.random() > 0.5;
+                        return {
+                            x: r * Math.cos(ang),
+                            y,
+                            z: r * Math.sin(ang),
+                            r: isHot ? 0.9 : 0.2 + t * 0.3,
+                            g: isHot ? 0.3 : 0.05 + t * 0.1,
+                            b: 0,
+                            s: isHot ? 2.5 : 1.5,
+                        };
+                    }
+                    if (i < COUNT * 0.7) {
+                        const r = Math.random() * 9,
+                            ang = Math.random() * Math.PI * 2;
+                        return {
+                            x: r * Math.cos(ang),
+                            y: 14 + Math.random() * 2,
+                            z: r * Math.sin(ang),
+                            r: 1,
+                            g: 0.4,
+                            b: 0,
+                            s: 3,
+                        };
+                    }
+                    if (Math.random() > 0.5) {
+                        return {
+                            x: (Math.random() - 0.5) * 15,
+                            y: 15 + Math.random() * 50,
+                            z: (Math.random() - 0.5) * 15,
+                            r: 1,
+                            g: 0.2,
+                            b: 0,
+                            s: 2,
+                        };
+                    }
+                    return {
+                        x: (Math.random() - 0.5) * 100,
+                        y: -20 + Math.random() * 80,
+                        z: (Math.random() - 0.5) * 100,
+                        r: 0.8,
+                        g: 0.1,
+                        b: 0,
+                        s: 0.8,
+                    };
+                },
+                clash: (i) => {
+                    const t = Math.random() * Math.PI * 2,
+                        r = 5 + Math.random() * 25;
+                    return {
+                        x: r * Math.cos(t),
+                        y: r * Math.sin(t),
+                        z: (Math.random() - 0.5) * 20,
+                        r: 1,
+                        g: 0.85,
+                        b: 0.1,
+                        s: 2,
+                    };
+                },
+            };
+
+            function setParticleTarget(techKey) {
+                const fn = PRESETS[techKey] || PRESETS.neutral;
+                for (let i = 0; i < COUNT; i++) {
+                    const p = fn(i);
+                    tPos[i * 3] = p.x;
+                    tPos[i * 3 + 1] = p.y;
+                    tPos[i * 3 + 2] = p.z;
+                    tCol[i * 3] = p.r;
+                    tCol[i * 3 + 1] = p.g;
+                    tCol[i * 3 + 2] = p.b;
+                    tSiz[i] = p.s;
+                }
+            }
+            setParticleTarget("neutral");
+
+            let shakeIntensity = 0;
+            let currentViz = "neutral";
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (shakeIntensity > 0) {
+                    renderer.domElement.style.transform = `translate(${(Math.random() - 0.5) * shakeIntensity * 30}px,${(Math.random() - 0.5) * shakeIntensity * 30}px)`;
+                } else renderer.domElement.style.transform = "";
+                for (let i = 0; i < COUNT * 3; i++) {
+                    pos[i] += (tPos[i] - pos[i]) * 0.1;
+                    col[i] += (tCol[i] - col[i]) * 0.1;
+                }
+                for (let i = 0; i < COUNT; i++)
+                    siz[i] += (tSiz[i] - siz[i]) * 0.1;
+                geo.attributes.position.needsUpdate = true;
+                geo.attributes.color.needsUpdate = true;
+                geo.attributes.size.needsUpdate = true;
+                if (currentViz === "red") particles.rotation.z -= 0.08;
+                else if (currentViz === "purple") {
+                    particles.rotation.z += 0.15;
+                    particles.rotation.y += 0.04;
+                } else if (currentViz === "blue") {
+                    particles.rotation.y += 0.02;
+                    particles.rotation.z += 0.01;
+                } else if (["shrine", "shadow", "iron"].includes(currentViz))
+                    particles.rotation.set(0, 0, 0);
+                else particles.rotation.y += 0.003;
+                composer.render();
+            }
+            animate();
+
+            window.addEventListener("resize", () => {
+                cam3d.aspect = window.innerWidth / window.innerHeight;
+                cam3d.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            function switchViz(key) {
+                currentViz = key;
+                const bloomMap = {
+                    neutral: 1.0,
+                    blue: 2.0,
+                    red: 2.5,
+                    dismantle: 2.0,
+                    purple: 4.0,
+                    void: 2.0,
+                    shrine: 2.5,
+                    shadow: 2.5,
+                    iron: 3.0,
+                    clash: 3.5,
+                };
+                bloomPass.strength = bloomMap[key] || 1.5;
+                shakeIntensity = key === "neutral" ? 0 : 0.3;
+                setParticleTarget(key);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // GAME STATE
+            // ═══════════════════════════════════════════════════════
+            const HP_MAX = 200;
+            let myPlayerNum = 0,
+                myRoomCode = "";
+            let p1hp = HP_MAX,
+                p2hp = HP_MAX;
+            let inClash = false;
+            let clashSequence = [],
+                clashProgress = 0,
+                clashTotal = 0,
+                clashTimerInterval = null;
+            let castingTech = null,
+                castPhase = null; // 'one' or 'two'
+            let castTimeout = null,
+                chargeInterval = null;
+            let castStartTime = 0,
+                castDuration = 0;
+            let isBlocking = false;
+            let gameActive = false;
+            let clashCurrentSignIdx = 0;
+
+            // Gesture sequences for techniques (one-handed phase)
+            const TECH_SEQUENCES = {
+                blue: [{ hand: "one", sign: "index_up" }],
+                red: [
+                    { hand: "one", sign: "index_up" },
+                    { hand: "one", sign: "fist" },
+                ],
+                dismantle: [
+                    { hand: "one", sign: "pinch" },
+                    { hand: "one", sign: "flat" },
+                ],
+                purple: [
+                    { hand: "one", sign: "pinch" },
+                    { hand: "one", sign: "horns" },
+                    { hand: "one", sign: "pinch" },
+                ],
+                void: [
+                    { hand: "one", sign: "index_up" },
+                    { hand: "one", sign: "peace" },
+                ],
+                shrine: [
+                    { hand: "one", sign: "fist" },
+                    { hand: "one", sign: "flat" },
+                ],
+                shadow: [
+                    { hand: "one", sign: "horns" },
+                    { hand: "one", sign: "peace" },
+                ],
+                iron: [
+                    { hand: "one", sign: "fist" },
+                    { hand: "one", sign: "horns" },
+                    { hand: "one", sign: "fist" },
+                ],
+            };
+
+            const TECH_NAMES = {
+                blue: "Blue",
+                red: "Reverse: Red",
+                dismantle: "Dismantle",
+                purple: "Secret: Hollow Purple",
+                void: "Domain: Infinite Void",
+                shrine: "Domain: Malevolent Shrine",
+                shadow: "Domain: Chimera Shadow Garden",
+                iron: "Domain: Coffin of the Iron Mountain",
+            };
+            const TECH_COLORS = {
+                blue: "#00c8ff",
+                red: "#ff5555",
+                dismantle: "#ff9900",
+                purple: "#cc44ff",
+                void: "#44ffee",
+                shrine: "#ff2222",
+                shadow: "#44ff88",
+                iron: "#ff6600",
+            };
+            const SIGN_EMOJI = {
+                index_up: "☝️",
+                pinch: "🤌",
+                fist: "✊",
+                flat: "🖐️",
+                horns: "🤘",
+                peace: "✌️",
+                both_pinch: "🤌🤌",
+                both_flat: "🖐️🖐️",
+                both_index: "☝️☝️",
+                both_horns: "🤘🤘",
+            };
+            const SIGN_LABEL = {
+                index_up: "INDEX",
+                pinch: "PINCH",
+                fist: "FIST",
+                flat: "FLAT HAND",
+                horns: "HORNS",
+                peace: "PEACE",
+                both_pinch: "BOTH PINCH",
+                both_flat: "BOTH FLAT",
+                both_index: "BOTH INDEX",
+                both_horns: "BOTH HORNS",
+            };
+
+            // ═══════════════════════════════════════════════════════
+            // SOCKET.IO
+            // ═══════════════════════════════════════════════════════
+            // ── Replace this URL with your Render deployment URL ──
+
+            const socket = io(window.location.origin, {
+                transports: ["websocket", "polling"],
+            });
+
+            socket.on("connect", () =>
+                setStatus("Connected to server", "success"),
+            );
+            socket.on("connect_error", () =>
+                setStatus("Server offline — check connection", "error"),
+            );
+
+            socket.on("room_created", ({ roomCode, playerNum }) => {
+                myRoomCode = roomCode;
+                myPlayerNum = playerNum;
+                showWaiting(roomCode);
+            });
+
+            socket.on("room_joined", ({ roomCode, playerNum }) => {
+                myRoomCode = roomCode;
+                myPlayerNum = playerNum;
+            });
+
+            socket.on("error", ({ msg }) => setStatus(msg, "error"));
+
+            socket.on("game_start", ({ p1, p2 }) => {
+                startGame();
+            });
+
+            socket.on("player_casting", ({ casterNum, tech, castTime }) => {
+                if (casterNum === myPlayerNum) return;
+                const name = TECH_NAMES[tech] || tech;
+                const color = TECH_COLORS[tech] || "#fff";
+                showEvent(`⚠ Opponent casting ${name}...`, color);
+            });
+
+            socket.on(
+                "attack_hit",
+                ({
+                    attackerNum,
+                    tech,
+                    damage,
+                    reason,
+                    p1hp: hp1,
+                    p2hp: hp2,
+                }) => {
+                    updateHp(hp1, hp2);
+                    const isMe = attackerNum === myPlayerNum;
+                    showHit(isMe, tech, damage, reason);
+                    switchViz(tech);
+                    setTimeout(() => switchViz("neutral"), 2500);
+                },
+            );
+
+            socket.on("attack_blocked", ({ attackerNum, tech }) => {
+                const isMe = attackerNum === myPlayerNum;
+                showEvent(
+                    isMe
+                        ? "🛡 Your technique was BLOCKED!"
+                        : "🛡 You BLOCKED the attack!",
+                    "#aaaaff",
+                );
+                shakeIntensity = 0;
+            });
+
+            socket.on("player_blocking", ({ playerNum, blocking }) => {
+                if (playerNum !== myPlayerNum) {
+                    showEvent(
+                        blocking ? "🛡 Opponent is BLOCKING" : "",
+                        "#888",
+                    );
+                }
+            });
+
+            socket.on(
+                "clash_start",
+                ({ p1Tech, p2Tech, sequence, timeLimit }) => {
+                    startClash(sequence, p1Tech, p2Tech, timeLimit);
+                },
+            );
+
+            socket.on("clash_progress", ({ playerNum, progress, total }) => {
+                updateClashProgress(playerNum, progress, total);
+            });
+
+            socket.on(
+                "clash_resolved",
+                ({
+                    winnerNum,
+                    winTech,
+                    loseTech,
+                    damage,
+                    p1hp: hp1,
+                    p2hp: hp2,
+                }) => {
+                    updateHp(hp1, hp2);
+                    endClash();
+                    const iWon = winnerNum === myPlayerNum;
+                    showHit(iWon, winTech, damage, "clash_win");
+                    switchViz(winTech);
+                    setTimeout(() => switchViz("neutral"), 2500);
+                },
+            );
+
+            socket.on("cast_cancelled", ({ playerNum }) => {
+                if (playerNum !== myPlayerNum)
+                    showEvent("Opponent cancelled their cast", "#555");
+            });
+
+            socket.on("game_over", ({ winnerNum }) => {
+                endGame(winnerNum === myPlayerNum);
+            });
+
+            socket.on("opponent_disconnected", () => {
+                showEvent("⚠ Opponent disconnected", "#ff8800");
+                gameActive = false;
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // LOBBY FUNCTIONS
+            // ═══════════════════════════════════════════════════════
+            function createRoom() {
+                const code = document
+                    .getElementById("create-code")
+                    .value.trim()
+                    .toUpperCase();
+                if (!code) {
+                    setStatus("Enter a room code", "error");
+                    return;
+                }
+                socket.emit("create_room", { roomCode: code });
+            }
+
+            function joinRoom() {
+                const code = document
+                    .getElementById("join-code")
+                    .value.trim()
+                    .toUpperCase();
+                if (!code) {
+                    setStatus("Enter a room code", "error");
+                    return;
+                }
+                socket.emit("join_room", { roomCode: code });
+            }
+
+            function toggleGuide() {
+                document
+                    .getElementById("gesture-guide")
+                    .classList.toggle("open");
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // GAME FLOW
+            // ═══════════════════════════════════════════════════════
+            function showWaiting(code) {
+                document.getElementById("lobby").style.display = "none";
+                const w = document.getElementById("waiting");
+                w.style.display = "flex";
+                document.getElementById("waiting-code").textContent = code;
+            }
+
+            function startGame() {
+                document.getElementById("lobby").style.display = "none";
+                document.getElementById("waiting").style.display = "none";
+                document.getElementById("hud").style.display = "block";
+                document.getElementById("status-bar").style.display = "flex";
+                document.getElementById("video-container").style.display =
+                    "block";
+                document.getElementById("guide-toggle").style.display = "block";
+                gameActive = true;
+                updateHp(HP_MAX, HP_MAX);
+                showEvent(
+                    `You are Player ${myPlayerNum}`,
+                    myPlayerNum === 1 ? "#00c8ff" : "#ff3a3a",
+                );
+                setTimeout(() => showEvent("", ""), 3000);
+                switchViz("neutral");
+            }
+
+            function endGame(iWon) {
+                gameActive = false;
+                const go = document.getElementById("gameover");
+                document.getElementById("gameover-title").textContent = iWon
+                    ? "VICTORY"
+                    : "DEFEATED";
+                document.getElementById("gameover-title").style.color = iWon
+                    ? "var(--gold)"
+                    : "#ff3333";
+                document.getElementById("gameover-sub").textContent = iWon
+                    ? "THE CURSED ENERGY DISSIPATES"
+                    : "YOUR CURSED ENERGY IS EXHAUSTED";
+                go.style.display = "flex";
+                switchViz(iWon ? "purple" : "iron");
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // HAND TRACKING
+            // ═══════════════════════════════════════════════════════
+            const videoEl = document.querySelector(".input_video");
+            const canvasEl = document.getElementById("output_canvas");
+            const ctx = canvasEl.getContext("2d");
+
+            // Sequence tracking
+            let seqBuffer = []; // recorded sign sequence so far
+            let seqLastSign = null;
+            let seqLastTime = 0;
+            const SEQ_WINDOW = 2500; // ms to complete sequence
+            let currentDetectedTech = null;
+            let techHoldStart = 0;
+
+            // Clash sign tracking
+            let clashLastSign = null;
+            let clashLastSignTime = 0;
+
+            const hands = new Hands({
+                locateFile: (f) =>
+                    `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+            });
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.5,
+            });
+
+            hands.onResults((results) => {
+                if (!gameActive) return;
+
+                canvasEl.width = videoEl.videoWidth;
+                canvasEl.height = videoEl.videoHeight;
+                ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+                const lms = results.multiHandLandmarks;
+
+                if (!lms || lms.length === 0) {
+                    handleNoHands();
+                    return;
+                }
+
+                // Draw
+                lms.forEach((lm) => {
+                    drawConnectors(ctx, lm, HAND_CONNECTIONS, {
+                        color: "rgba(255,255,255,0.4)",
+                        lineWidth: 3,
+                    });
+                    drawLandmarks(ctx, lm, {
+                        color: "#fff",
+                        lineWidth: 1,
+                        radius: 2,
+                    });
+                });
+
+                const bothVisible = lms.length >= 2;
+
+                // Detect signs per hand
+                const signs = lms.map((lm) => detectSign(lm));
+                const sign1 = signs[0];
+                const sign2 = bothVisible ? signs[1] : null;
+
+                // BLOCK: both hands flat
+                if (bothVisible && sign1 === "flat" && sign2 === "flat") {
+                    handleBlock(true);
+                    return;
+                } else if (isBlocking) {
+                    handleBlock(false);
+                }
+
+                // During clash — track clash signs
+                if (inClash && clashSequence.length > 0) {
+                    handleClashInput(sign1, sign2, bothVisible);
+                    return;
+                }
+
+                // Normal casting detection
+                if (!inClash) {
+                    handleCastInput(sign1, sign2, bothVisible);
+                }
+            });
+
+            function detectSign(lm) {
+                if (!lm) return null;
+                const isUp = (t, p) => lm[t].y < lm[p].y;
+                const pinch = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
+                if (pinch < 0.05) return "pinch";
+                const i = isUp(8, 6),
+                    m = isUp(12, 10),
+                    r = isUp(16, 14),
+                    p = isUp(20, 18);
+                if (i && m && !r && !p) return "peace";
+                if (i && !m && !r && p) return "horns";
+                if (i && m && r && p) return "flat";
+                if (i && !m && !r && !p) return "index_up";
+                if (!i && !m && !r && !p) return "fist";
+                return "other";
+            }
+
+            function handleNoHands() {
+                if (isBlocking) handleBlock(false);
+                cancelCast();
+            }
+
+            function handleBlock(on) {
+                if (on === isBlocking) return;
+                isBlocking = on;
+                if (on) {
+                    cancelCast();
+                    socket.emit("set_block", {
+                        roomCode: myRoomCode,
+                        blocking: true,
+                    });
+                    document.getElementById("technique-name").textContent =
+                        "🛡 BLOCKING";
+                    document.getElementById("technique-name").style.color =
+                        "#aaaaff";
+                    switchViz("neutral");
+                } else {
+                    socket.emit("set_block", {
+                        roomCode: myRoomCode,
+                        blocking: false,
+                    });
+                    document.getElementById("technique-name").textContent =
+                        "CURSED ENERGY";
+                    document.getElementById("technique-name").style.color =
+                        "#00ffff";
+                }
+            }
+
+            // Track sequential sign input for technique casting
+            let seqState = {
+                tech: null,
+                step: 0,
+                lastSignAt: 0,
+                stepSigns: [],
+            };
+
+            function handleCastInput(sign1, sign2, bothHands) {
+                if (isBlocking || inClash) return;
+
+                const now = Date.now();
+
+                // Reset if too slow between signs
+                if (
+                    seqState.step > 0 &&
+                    now - seqState.lastSignAt > SEQ_WINDOW
+                ) {
+                    resetSeqState();
+                }
+
+                // Check each technique's first sign
+                if (seqState.step === 0) {
+                    // Find techniques whose first sign matches sign1
+                    const matches = Object.entries(TECH_SEQUENCES).filter(
+                        ([, seq]) => seq[0].sign === sign1,
+                    );
+                    if (matches.length > 0 && sign1 !== seqState.prevSign) {
+                        // Disambiguate: pick the one that's been held
+                        // Actually we just store that sign1 was seen and wait for next gesture
+                        seqState.step = 1;
+                        seqState.lastSignAt = now;
+                        seqState.prevSign = sign1;
+                        seqState.stepSigns = [sign1];
+                        // Find all techs starting with this
+                        seqState.candidates = matches.map(([k]) => k);
+                        updateTechNameFromCandidates(seqState.candidates);
+                    }
+                } else {
+                    // We have candidates — check if sign changed
+                    if (
+                        sign1 &&
+                        sign1 !== seqState.prevSign &&
+                        sign1 !== "other"
+                    ) {
+                        seqState.stepSigns.push(sign1);
+                        seqState.prevSign = sign1;
+                        seqState.lastSignAt = now;
+                        seqState.step++;
+
+                        // Filter candidates
+                        const step = seqState.step - 1;
+                        seqState.candidates = seqState.candidates.filter(
+                            (k) => {
+                                const seq = TECH_SEQUENCES[k];
+                                return seq[step] && seq[step].sign === sign1;
+                            },
+                        );
+
+                        if (seqState.candidates.length === 0) {
+                            resetSeqState();
+                            return;
+                        }
+
+                        updateTechNameFromCandidates(seqState.candidates);
+
+                        // Check if any candidate is fully matched
+                        const matched = seqState.candidates.find(
+                            (k) => TECH_SEQUENCES[k].length === seqState.step,
+                        );
+                        if (matched) {
+                            beginCast(matched);
+                        }
+                    }
+                }
+            }
+
+            function updateTechNameFromCandidates(candidates) {
+                if (candidates.length === 1) {
+                    const t = candidates[0];
+                    document.getElementById("technique-name").textContent =
+                        `FORMING: ${TECH_NAMES[t]}`;
+                    document.getElementById("technique-name").style.color =
+                        TECH_COLORS[t] || "#fff";
+                } else {
+                    document.getElementById("technique-name").textContent =
+                        "CURSED SIGN...";
+                    document.getElementById("technique-name").style.color =
+                        "#ffffff";
+                }
+            }
+
+            function resetSeqState() {
+                seqState = {
+                    tech: null,
+                    step: 0,
+                    lastSignAt: 0,
+                    prevSign: null,
+                    stepSigns: [],
+                    candidates: [],
+                };
+                if (!isBlocking && !castingTech) {
+                    document.getElementById("technique-name").textContent =
+                        "CURSED ENERGY";
+                    document.getElementById("technique-name").style.color =
+                        "#00ffff";
+                }
+            }
+
+            function beginCast(tech) {
+                if (castingTech) return;
+                castingTech = tech;
+                resetSeqState();
+                const isDoamin = ["void", "shrine", "shadow", "iron"].includes(
+                    tech,
+                );
+                castDuration = isDoamin ? 2000 : 1000;
+                castStartTime = Date.now();
+
+                document.getElementById("technique-name").textContent =
+                    `⚡ ${TECH_NAMES[tech].toUpperCase()}`;
+                document.getElementById("technique-name").style.color =
+                    TECH_COLORS[tech];
+
+                // Notify server of intent
+                socket.emit("cast_intent", { roomCode: myRoomCode, tech });
+
+                // Show charge bar
+                const cw = document.getElementById("charge-wrap");
+                cw.style.display = "flex";
+                document.getElementById("charge-bar-inner").style.background =
+                    TECH_COLORS[tech];
+                switchViz(tech);
+
+                // Animate charge bar
+                chargeInterval = setInterval(() => {
+                    const elapsed = Date.now() - castStartTime;
+                    const pct = Math.min(100, (elapsed / castDuration) * 100);
+                    document.getElementById("charge-bar-inner").style.width =
+                        pct + "%";
+                    if (pct >= 100) clearInterval(chargeInterval);
+                }, 30);
+
+                // Auto-activate after castDuration
+                castTimeout = setTimeout(() => {
+                    if (castingTech === tech) {
+                        activateCast(tech);
+                    }
+                }, castDuration);
+            }
+
+            function activateCast(tech) {
+                castingTech = null;
+                clearTimeout(castTimeout);
+                clearInterval(chargeInterval);
+                document.getElementById("charge-wrap").style.display = "none";
+                document.getElementById("charge-bar-inner").style.width = "0%";
+                socket.emit("cast_activate", { roomCode: myRoomCode, tech });
+            }
+
+            function cancelCast() {
+                if (castingTech) {
+                    clearTimeout(castTimeout);
+                    clearInterval(chargeInterval);
+                    socket.emit("cancel_cast", { roomCode: myRoomCode });
+                    castingTech = null;
+                    document.getElementById("charge-wrap").style.display =
+                        "none";
+                    document.getElementById("charge-bar-inner").style.width =
+                        "0%";
+                    document.getElementById("technique-name").textContent =
+                        "CURSED ENERGY";
+                    document.getElementById("technique-name").style.color =
+                        "#00ffff";
+                    switchViz("neutral");
+                }
+                resetSeqState();
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // CLASH INPUT
+            // ═══════════════════════════════════════════════════════
+            let clashSignCooldown = false;
+
+            function handleClashInput(sign1, sign2, bothHands) {
+                if (!inClash || clashCurrentSignIdx >= clashSequence.length)
+                    return;
+                if (clashSignCooldown) return;
+
+                const needed = clashSequence[clashCurrentSignIdx];
+
+                // Check if this sign matches what's needed
+                const isMatch =
+                    needed.startsWith("both_") && bothHands
+                        ? matchBothSign(needed, sign1, sign2)
+                        : sign1 === needed || sign2 === needed;
+
+                if (isMatch) {
+                    clashSignCooldown = true;
+                    setTimeout(() => {
+                        clashSignCooldown = false;
+                    }, 400); // debounce
+
+                    // Mark this sign done visually
+                    const signEls = document.querySelectorAll(".clash-sign");
+                    if (signEls[clashCurrentSignIdx]) {
+                        signEls[clashCurrentSignIdx].classList.remove("active");
+                        signEls[clashCurrentSignIdx].classList.add("done");
+                    }
+                    if (signEls[clashCurrentSignIdx + 1]) {
+                        signEls[clashCurrentSignIdx + 1].classList.add(
+                            "active",
+                        );
+                    }
+
+                    socket.emit("clash_sign", {
+                        roomCode: myRoomCode,
+                        signIndex: clashCurrentSignIdx,
+                    });
+                    clashCurrentSignIdx++;
+                }
+            }
+
+            function matchBothSign(needed, s1, s2) {
+                const map = {
+                    both_pinch: "pinch",
+                    both_flat: "flat",
+                    both_index: "index_up",
+                    both_horns: "horns",
+                    both_peace: "peace",
+                };
+                const want = map[needed];
+                return want && s1 === want && s2 === want;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // CLASH UI
+            // ═══════════════════════════════════════════════════════
+            function startClash(sequence, p1Tech, p2Tech, timeLimit) {
+                inClash = true;
+                clashSequence = sequence;
+                clashCurrentSignIdx = 0;
+                clashSignCooldown = false;
+
+                const clashUI = document.getElementById("clash-ui");
+                clashUI.style.display = "flex";
+                switchViz("clash");
+                shakeIntensity = 0.5;
+
+                // Build sign display
+                const seqEl = document.getElementById("clash-sequence");
+                seqEl.innerHTML = "";
+                sequence.forEach((sign, i) => {
+                    const el = document.createElement("div");
+                    el.className = "clash-sign" + (i === 0 ? " active" : "");
+                    el.innerHTML = `<span>${SIGN_EMOJI[sign] || "❓"}</span><span class="clash-sign-label">${SIGN_LABEL[sign] || sign}</span>`;
+                    seqEl.appendChild(el);
+                });
+
+                // Label by player
+                document.getElementById("clash-p1-label").textContent =
+                    `P${myPlayerNum === 1 ? "YOU" : "OPP"}`;
+                document.getElementById("clash-p2-label").textContent =
+                    `P${myPlayerNum === 2 ? "YOU" : "OPP"}`;
+
+                // Timer
+                let remaining = Math.ceil(timeLimit / 1000);
+                document.getElementById("clash-timer").textContent = remaining;
+                clashTimerInterval = setInterval(() => {
+                    remaining--;
+                    document.getElementById("clash-timer").textContent =
+                        remaining;
+                    if (remaining <= 0) {
+                        clearInterval(clashTimerInterval);
+                    }
+                }, 1000);
+            }
+
+            function updateClashProgress(playerNum, progress, total) {
+                const isMe = playerNum === myPlayerNum;
+                const fillId = isMe ? "clash-p1-fill" : "clash-p2-fill";
+                const pct = (progress / total) * 100;
+                document.getElementById(fillId).style.width = pct + "%";
+            }
+
+            function endClash() {
+                inClash = false;
+                clashSequence = [];
+                clashCurrentSignIdx = 0;
+                clearInterval(clashTimerInterval);
+                document.getElementById("clash-ui").style.display = "none";
+                shakeIntensity = 0.3;
+                setTimeout(() => {
+                    shakeIntensity = 0;
+                }, 2500);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // HUD HELPERS
+            // ═══════════════════════════════════════════════════════
+            function updateHp(hp1, hp2) {
+                p1hp = hp1;
+                p2hp = hp2;
+                document.getElementById("p1-bar").style.width =
+                    (hp1 / HP_MAX) * 100 + "%";
+                document.getElementById("p2-bar").style.width =
+                    (hp2 / HP_MAX) * 100 + "%";
+                document.getElementById("p1-hp").textContent = hp1;
+                document.getElementById("p2-hp").textContent = hp2;
+                // Flash damaged player's bar
+                const el =
+                    hp1 < p1hp
+                        ? document.getElementById("p1-bar")
+                        : document.getElementById("p2-bar");
+                el.classList.add("damage-flash");
+                setTimeout(() => el.classList.remove("damage-flash"), 500);
+            }
+
+            function showEvent(msg, color = "#fff") {
+                const el = document.getElementById("event-msg");
+                el.textContent = msg;
+                el.style.color = color;
+            }
+
+            function showHit(iAttacker, tech, damage, reason) {
+                const el = document.getElementById("hit-notif");
+                el.textContent =
+                    reason === "blocked"
+                        ? "🛡 BLOCKED!"
+                        : reason === "domain_breaks_block"
+                          ? "💥 DOMAIN BREAKS BLOCK!"
+                          : reason === "clash_win"
+                            ? `⚔ CLASH WIN! -${damage}HP`
+                            : iAttacker
+                              ? `💥 HIT! -${damage}HP`
+                              : `💢 YOU TOOK ${damage}HP!`;
+                el.style.color = iAttacker ? "#00ff88" : "#ff4444";
+                el.classList.add("show");
+                setTimeout(() => el.classList.remove("show"), 1800);
+                showEvent(
+                    TECH_NAMES[tech] || tech,
+                    TECH_COLORS[tech] || "#fff",
+                );
+            }
+
+            function setStatus(msg, type = "") {
+                const el = document.getElementById("lobby-status");
+                el.textContent = msg;
+                el.className = type;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // MEDIAPIPE CAMERA
+            // ═══════════════════════════════════════════════════════
+            const mpCam = new Camera(videoEl, {
+                onFrame: async () => {
+                    canvasEl.width = videoEl.videoWidth;
+                    canvasEl.height = videoEl.videoHeight;
+                    await hands.send({ image: videoEl });
+                },
+                width: 640,
+                height: 480,
+            });
+            mpCam.start();
+
+            // ── Wire up buttons via addEventListener (module scope safe) ──
+            document
+                .querySelector(".btn-create")
+                .addEventListener("click", createRoom);
+            document
+                .querySelector(".btn-join")
+                .addEventListener("click", joinRoom);
+            document
+                .getElementById("guide-toggle")
+                .addEventListener("click", toggleGuide);
+            document
+                .getElementById("gameover-btn")
+                .addEventListener("click", () => location.reload());
+            document
+                .getElementById("create-code")
+                .addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") createRoom();
+                });
+            document
+                .getElementById("join-code")
+                .addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") joinRoom();
+                });
+        </script>
+    </body>
+</html>
